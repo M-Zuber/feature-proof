@@ -1,0 +1,338 @@
+@page "/"
+@rendermode InteractiveServer
+@inject FeatureProofWorkspace Workspace
+@inject IWebHostEnvironment Environment
+
+<PageTitle>FeatureProof</PageTitle>
+
+<section class="workspace-header">
+    <div>
+        <p class="eyebrow">Local parity workspace</p>
+        <h1>FeatureProof</h1>
+    </div>
+    <div class="file-bar">
+        <input class="form-control" @bind="filePath" aria-label="Feature proof file path" />
+        <button class="btn btn-outline-secondary" @onclick="LoadFile">Open</button>
+        <button class="btn btn-primary" @onclick="SaveFile" disabled="@(!CanSave)">Save</button>
+    </div>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Workspace.Message))
+{
+    <div class="notice">@Workspace.Message</div>
+}
+
+@if (Workspace.Issues.Count > 0)
+{
+    <section class="issue-band">
+        @foreach (var issue in Workspace.Issues)
+        {
+            <div><strong>@issue.Code</strong>: @issue.Message</div>
+        }
+    </section>
+}
+
+@if (Workspace.Document is null || Workspace.Summary is null)
+{
+    <section class="empty-state">
+        <h2>Open a .fproof file to begin.</h2>
+        <p>The sample project path is already filled in so you can start acceptance testing immediately.</p>
+    </section>
+}
+else
+{
+    var document = Workspace.Document;
+    var summary = Workspace.Summary;
+    var latestRun = document.Runs.LastOrDefault();
+    var filteredChecks = Filter(summary.Checks).ToList();
+
+    <section class="project-strip">
+        <div>
+            <span>Project</span>
+            <strong>@document.Project.Name</strong>
+        </div>
+        <div>
+            <span>Target</span>
+            <strong>@document.Project.TargetSystem</strong>
+        </div>
+        <div>
+            <span>Source systems</span>
+            <strong>@string.Join(", ", document.Project.SourceSystems)</strong>
+        </div>
+    </section>
+
+    <section class="metrics">
+        <div class="metric">
+            <span>Checks</span>
+            <strong>@summary.TotalChecks</strong>
+        </div>
+        <div class="metric">
+            <span>Runs</span>
+            <strong>@summary.TotalRuns</strong>
+        </div>
+        <div class="metric">
+            <span>Pass</span>
+            <strong>@Count(CheckStatus.Pass)</strong>
+        </div>
+        <div class="metric">
+            <span>Failing</span>
+            <strong>@(Count(CheckStatus.Fail) + Count(CheckStatus.Partial) + Count(CheckStatus.Blocked))</strong>
+        </div>
+        <div class="metric">
+            <span>Untested</span>
+            <strong>@Count(CheckStatus.Untested)</strong>
+        </div>
+    </section>
+
+    <section class="tool-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Run Control</h2>
+                <p>@(latestRun is null ? "No active run yet." : $"{latestRun.Id} has {latestRun.Results.Count} recorded results.")</p>
+            </div>
+            <button class="btn btn-outline-secondary" @onclick="CompleteRun" disabled="@(latestRun is null || latestRun.CompletedAt is not null)">Complete run</button>
+        </div>
+        <div class="run-grid">
+            <label>
+                Tester
+                <input class="form-control" @bind="tester" />
+            </label>
+            <label>
+                Target version
+                <input class="form-control" @bind="targetVersion" />
+            </label>
+            <label>
+                Browser
+                <input class="form-control" @bind="browser" />
+            </label>
+            <label>
+                URL
+                <input class="form-control" @bind="url" />
+            </label>
+            <button class="btn btn-primary" @onclick="StartRun">Start new run</button>
+        </div>
+    </section>
+
+    <section class="tool-panel">
+        <div class="panel-header">
+            <div>
+                <h2>Checks</h2>
+                <p>@filteredChecks.Count of @summary.TotalChecks visible</p>
+            </div>
+            <div class="filters">
+                <input class="form-control" placeholder="Filter checks" @bind="search" @bind:event="oninput" />
+                <select class="form-select" @bind="statusFilter">
+                    <option value="">All statuses</option>
+                    @foreach (var status in Enum.GetValues<CheckStatus>())
+                    {
+                        <option value="@status">@FormatStatus(status)</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="checks-table">
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Check</th>
+                        <th>Priority</th>
+                        <th>Latest</th>
+                        <th>Record result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var snapshot in filteredChecks)
+                    {
+                        EnsureDraft(snapshot);
+                        <tr>
+                            <td>@(snapshot.Area?.Name ?? snapshot.Check.Area)</td>
+                            <td>
+                                <strong>@snapshot.Check.Title</strong>
+                                <p>@snapshot.Check.Description</p>
+                                <details>
+                                    <summary>Steps and expected result</summary>
+                                    <ol>
+                                        @foreach (var step in snapshot.Check.Steps)
+                                        {
+                                            <li>@step</li>
+                                        }
+                                    </ol>
+                                    <ul>
+                                        @foreach (var expected in snapshot.Check.Expected)
+                                        {
+                                            <li>@expected</li>
+                                        }
+                                    </ul>
+                                </details>
+                            </td>
+                            <td><span class="pill">@snapshot.Check.Priority</span></td>
+                            <td>
+                                <span class="status @StatusClass(snapshot.LatestStatus)">@FormatStatus(snapshot.LatestStatus)</span>
+                                <small>@snapshot.LatestRun?.Id</small>
+                            </td>
+                            <td>
+                                <select class="form-select" @bind="statusDrafts[snapshot.Check.Id]">
+                                    @foreach (var status in Enum.GetValues<CheckStatus>())
+                                    {
+                                        <option value="@status">@FormatStatus(status)</option>
+                                    }
+                                </select>
+                                <textarea class="form-control" rows="2" placeholder="Notes" @bind="notesDrafts[snapshot.Check.Id]"></textarea>
+                                <button class="btn btn-outline-primary btn-sm" @onclick="() => Record(snapshot.Check.Id)" disabled="@(latestRun is null)">Record</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="two-column">
+        <div class="tool-panel">
+            <div class="panel-header">
+                <h2>Run History</h2>
+            </div>
+            @foreach (var run in document.Runs.OrderByDescending(run => run.StartedAt))
+            {
+                <div class="run-row">
+                    <strong>@run.Id</strong>
+                    <span>@run.StartedAt.LocalDateTime</span>
+                    <span>@run.Results.Count results</span>
+                    <span>@(run.CompletedAt is null ? "Open" : "Completed")</span>
+                </div>
+            }
+        </div>
+        <div class="tool-panel">
+            <div class="panel-header">
+                <h2>Report</h2>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="GenerateReport">Preview</button>
+            </div>
+            <textarea class="form-control report-preview" readonly value="@report"></textarea>
+        </div>
+    </section>
+}
+
+@code {
+    private string filePath = "";
+    private string tester = System.Environment.UserName;
+    private string targetVersion = "crm-preview";
+    private string browser = "Edge";
+    private string url = "";
+    private string search = "";
+    private string statusFilter = "";
+    private string report = "";
+    private readonly Dictionary<string, CheckStatus> statusDrafts = [];
+    private readonly Dictionary<string, string> notesDrafts = [];
+
+    private bool CanSave => Workspace.Document is not null && !string.IsNullOrWhiteSpace(Workspace.CurrentPath);
+
+    protected override async Task OnInitializedAsync()
+    {
+        filePath = Path.GetFullPath(Path.Combine(Environment.ContentRootPath, "..", "..", "samples", "crm-parity.fproof"));
+
+        if (File.Exists(filePath))
+        {
+            await LoadFile();
+        }
+    }
+
+    private async Task LoadFile()
+    {
+        await Workspace.LoadAsync(filePath);
+        SeedDrafts();
+    }
+
+    private async Task SaveFile()
+    {
+        await Workspace.SaveAsync();
+    }
+
+    private void StartRun()
+    {
+        Workspace.StartRun(tester, targetVersion, browser, url);
+        SeedDrafts();
+    }
+
+    private void CompleteRun() => Workspace.CompleteLatestRun();
+
+    private void Record(string checkId)
+    {
+        statusDrafts.TryGetValue(checkId, out var status);
+        notesDrafts.TryGetValue(checkId, out var notes);
+        Workspace.RecordResult(checkId, status, notes);
+        SeedDrafts();
+    }
+
+    private void GenerateReport()
+    {
+        report = Workspace.Document is null ? "" : MarkdownReportWriter.Write(Workspace.Document);
+    }
+
+    private IEnumerable<CheckSnapshot> Filter(IEnumerable<CheckSnapshot> checks)
+    {
+        foreach (var snapshot in checks)
+        {
+            if (!string.IsNullOrWhiteSpace(statusFilter) &&
+                Enum.TryParse<CheckStatus>(statusFilter, out var selectedStatus) &&
+                snapshot.LatestStatus != selectedStatus)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var haystack = $"{snapshot.Check.Title} {snapshot.Check.Description} {snapshot.Check.SourceSystem} {snapshot.Area?.Name}";
+                if (!haystack.Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+            }
+
+            yield return snapshot;
+        }
+    }
+
+    private int Count(CheckStatus status) =>
+        Workspace.Summary?.StatusCounts.FirstOrDefault(count => count.Status == status)?.Count ?? 0;
+
+    private void SeedDrafts()
+    {
+        if (Workspace.Summary is null)
+        {
+            return;
+        }
+
+        foreach (var snapshot in Workspace.Summary.Checks)
+        {
+            statusDrafts[snapshot.Check.Id] = snapshot.LatestStatus == CheckStatus.Untested
+                ? CheckStatus.Pass
+                : snapshot.LatestStatus;
+            notesDrafts.TryAdd(snapshot.Check.Id, snapshot.LatestResult?.Notes ?? "");
+        }
+    }
+
+    private void EnsureDraft(CheckSnapshot snapshot)
+    {
+        if (!statusDrafts.ContainsKey(snapshot.Check.Id))
+        {
+            statusDrafts[snapshot.Check.Id] = snapshot.LatestStatus == CheckStatus.Untested
+                ? CheckStatus.Pass
+                : snapshot.LatestStatus;
+        }
+
+        notesDrafts.TryAdd(snapshot.Check.Id, snapshot.LatestResult?.Notes ?? "");
+    }
+
+    private static string FormatStatus(CheckStatus status) =>
+        status switch
+        {
+            CheckStatus.NotApplicable => "Not applicable",
+            CheckStatus.NeedsReview => "Needs review",
+            _ => status.ToString()
+        };
+
+    private static string StatusClass(CheckStatus status) =>
+        status.ToString().ToLowerInvariant();
+}

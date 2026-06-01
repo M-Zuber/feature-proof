@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FeatureProof.App/FeatureProof.App.csproj" />
+    <Project Path="src/FeatureProof.Core/FeatureProof.Core.csproj" />
+    <Project Path="src/FeatureProof.Format/FeatureProof.Format.csproj" />
+    <Project Path="src/FeatureProof.Reports/FeatureProof.Reports.csproj" />
+    <Project Path="tests/FeatureProof.Core.Tests/FeatureProof.Core.Tests.csproj" />
+    <Project Path="tests/FeatureProof.Format.Tests/FeatureProof.Format.Tests.csproj" />
+  </Folder>
+</Solution>

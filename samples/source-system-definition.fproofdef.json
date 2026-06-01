@@ -1,0 +1,54 @@
+{
+  "$schema": "../schema/feature-proof-definition.schema.json",
+  "schema": "feature-proof-definition/v1",
+  "project": {
+    "name": "All-in-One CRM Feature Parity",
+    "targetSystem": "New All-in-One CRM"
+  },
+  "sourceSystems": [
+    {
+      "name": "Legacy CRM",
+      "purpose": "Primary constituent and donor management system.",
+      "modules": [
+        {
+          "name": "Donor Profiles",
+          "capabilities": [
+            {
+              "name": "Search donors by name",
+              "businessOutcome": "Staff can reliably find the correct donor record.",
+              "priority": "must",
+              "acceptanceSignals": [
+                "Search accepts first name, last name, and organization name.",
+                "Results show enough identifying information to disambiguate donors.",
+                "Opening a result lands on the correct profile."
+              ],
+              "dataRequirements": [
+                "Existing donor records with individual and organization names."
+              ]
+            },
+            {
+              "name": "Update donor contact details",
+              "businessOutcome": "Staff can maintain current contact information with auditability.",
+              "priority": "must",
+              "acceptanceSignals": [
+                "Email and phone fields can be edited.",
+                "Saved values persist after refresh.",
+                "Changes are visible in audit or activity history."
+              ],
+              "dataRequirements": [
+                "A donor record safe to edit in a test environment."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "generationInstructions": {
+    "outputFormat": "feature-proof/v1",
+    "idStyle": "lower-kebab-case",
+    "minimumChecksPerCapability": 1,
+    "includeAgentHints": true,
+    "includeManualSteps": true
+  }
+}

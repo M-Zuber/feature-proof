@@ -1,0 +1,25 @@
+.page {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+.sidebar {
+    background: #172026;
+}
+
+main {
+    min-width: 0;
+}
+
+@media (max-width: 760px) {
+    .page {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+}

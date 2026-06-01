@@ -1,0 +1,48 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+
+# ASP.NET / Blazor
+wwwroot/**/*.gz
+wwwroot/**/*.br
+appsettings.Local.json
+appsettings.*.local.json
+
+# Logs and diagnostics
+*.log
+logs/
+crashdump/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local FeatureProof evidence artifacts can be large; keep placeholders/docs tracked explicitly.
+evidence/
+!evidence/.gitkeep

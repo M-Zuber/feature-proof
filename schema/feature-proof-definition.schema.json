@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oss.example.org/feature-proof-definition.schema.json",
+  "title": "FeatureProof source system definition",
+  "type": "object",
+  "required": [ "schema", "project", "sourceSystems", "generationInstructions" ],
+  "properties": {
+    "schema": { "const": "feature-proof-definition/v1" },
+    "project": {
+      "type": "object",
+      "required": [ "name", "targetSystem" ],
+      "properties": {
+        "name": { "type": "string" },
+        "targetSystem": { "type": "string" }
+      }
+    },
+    "sourceSystems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [ "name", "purpose", "modules" ],
+        "properties": {
+          "name": { "type": "string" },
+          "purpose": { "type": "string" },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [ "name", "capabilities" ],
+              "properties": {
+                "name": { "type": "string" },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [ "name", "businessOutcome", "priority", "acceptanceSignals" ],
+                    "properties": {
+                      "name": { "type": "string" },
+                      "businessOutcome": { "type": "string" },
+                      "priority": { "enum": [ "must", "should", "could" ] },
+                      "acceptanceSignals": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "dataRequirements": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "generationInstructions": {
+      "type": "object",
+      "properties": {
+        "outputFormat": { "const": "feature-proof/v1" },
+        "idStyle": { "type": "string" },
+        "minimumChecksPerCapability": { "type": "integer", "minimum": 1 },
+        "includeAgentHints": { "type": "boolean" },
+        "includeManualSteps": { "type": "boolean" }
+      }
+    }
+  }
+}
