@@ -36,7 +36,7 @@
 {
     <section class="empty-state">
         <h2>Open a .fproof file to begin.</h2>
-        <p>The sample project path is already filled in so you can start acceptance testing immediately.</p>
+        <p>Enter the path to a local parity file and open it. Repository builds auto-load the sample file when it is present.</p>
     </section>
 }
 else
@@ -230,12 +230,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        filePath = Path.GetFullPath(Path.Combine(Environment.ContentRootPath, "..", "..", "samples", "crm-parity.fproof"));
+        var samplePath = Path.GetFullPath(Path.Combine(Environment.ContentRootPath, "..", "..", "samples", "crm-parity.fproof"));
 
-        if (File.Exists(filePath))
+        if (File.Exists(samplePath))
         {
+            filePath = samplePath;
             await LoadFile();
+            return;
         }
+
+        filePath = Path.Combine(
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments),
+            "feature-proof.fproof");
     }
 
     private async Task LoadFile()

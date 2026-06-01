@@ -25,3 +25,13 @@ The app opens `samples\crm-parity.fproof` by default when launched from the repo
 ## Format
 
 See `docs\format-v1.md` and the schemas in `schema\`.
+
+## Package
+
+Create a manually shareable artifact with:
+
+```powershell
+pwsh ./eng/package.ps1 -Version 0.1.0
+```
+
+The script creates `artifacts/FeatureProof-0.1.0.zip`. The archive contains self-contained app folders for Windows, Linux, and macOS, so team members do not need to install .NET. Sample `.fproof` files are intentionally excluded from the package.
