@@ -44,6 +44,7 @@ else
     var document = Workspace.Document;
     var summary = Workspace.Summary;
     var latestRun = document.Runs.LastOrDefault();
+    var activeRun = Workspace.ActiveRun;
     var filteredChecks = Filter(summary.Checks).ToList();
 
     <section class="project-strip">
@@ -90,7 +91,7 @@ else
                 <h2>Run Control</h2>
                 <p>@(latestRun is null ? "No active run yet." : $"{latestRun.Id} has {latestRun.Results.Count} recorded results.")</p>
             </div>
-            <button class="btn btn-outline-secondary" @onclick="CompleteRun" disabled="@(latestRun is null || latestRun.CompletedAt is not null)">Complete run</button>
+            <button class="btn btn-outline-secondary" @onclick="CompleteRun" disabled="@(activeRun is null)">Complete run</button>
         </div>
         <div class="run-grid">
             <label>
@@ -180,7 +181,7 @@ else
                                     }
                                 </select>
                                 <textarea class="form-control" rows="2" placeholder="Notes" @bind="notesDrafts[snapshot.Check.Id]"></textarea>
-                                <button class="btn btn-outline-primary btn-sm" @onclick="() => Record(snapshot.Check.Id)" disabled="@(latestRun is null)">Record</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick="() => Record(snapshot.Check.Id)" disabled="@(activeRun is null)">Record</button>
                             </td>
                         </tr>
                     }
@@ -258,7 +259,7 @@ else
     private void StartRun()
     {
         Workspace.StartRun(tester, targetVersion, browser, url);
-        SeedDrafts();
+        ResetDraftsForNewRun();
     }
 
     private void CompleteRun() => Workspace.CompleteLatestRun();
@@ -316,6 +317,23 @@ else
                 ? CheckStatus.Pass
                 : snapshot.LatestStatus;
             notesDrafts.TryAdd(snapshot.Check.Id, snapshot.LatestResult?.Notes ?? "");
+        }
+    }
+
+    private void ResetDraftsForNewRun()
+    {
+        statusDrafts.Clear();
+        notesDrafts.Clear();
+
+        if (Workspace.Summary is null)
+        {
+            return;
+        }
+
+        foreach (var snapshot in Workspace.Summary.Checks)
+        {
+            statusDrafts[snapshot.Check.Id] = CheckStatus.Pass;
+            notesDrafts[snapshot.Check.Id] = "";
         }
     }
 

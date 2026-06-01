@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 using FeatureProof.Core;
 
 namespace FeatureProof.Format;
@@ -31,7 +32,9 @@ public static class FeatureProofJson
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true

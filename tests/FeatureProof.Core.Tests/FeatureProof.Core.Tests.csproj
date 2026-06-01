@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FeatureProof.App\FeatureProof.App.csproj" />
     <ProjectReference Include="..\..\src\FeatureProof.Core\FeatureProof.Core.csproj" />
+    <ProjectReference Include="..\..\src\FeatureProof.Format\FeatureProof.Format.csproj" />
   </ItemGroup>
 
 </Project>

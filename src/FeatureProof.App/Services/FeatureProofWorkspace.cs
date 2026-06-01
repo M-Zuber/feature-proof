@@ -14,6 +14,14 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
     public bool HasUnsavedChanges { get; private set; }
 
     public ProjectSummary? Summary => Document is null ? null : FeatureProofAnalysis.Summarize(Document);
+    public TestRun? ActiveRun
+    {
+        get
+        {
+            var latestRun = Document?.Runs.LastOrDefault();
+            return latestRun?.CompletedAt is null ? latestRun : null;
+        }
+    }
 
     public async Task LoadAsync(string path, CancellationToken cancellationToken = default)
     {
@@ -71,7 +79,7 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
 
     public void RecordResult(string checkId, CheckStatus status, string? notes)
     {
-        var run = Document?.Runs.LastOrDefault();
+        var run = ActiveRun;
         if (run is null)
         {
             Message = "Start a run before recording results.";
@@ -88,7 +96,7 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
         }
 
         result.Status = status;
-        result.Notes = notes;
+        result.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes;
         result.RecordedAt = DateTimeOffset.Now;
         HasUnsavedChanges = true;
         Message = $"Recorded {status} for {checkId}";

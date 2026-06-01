@@ -1,4 +1,6 @@
 using FeatureProof.Core;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FeatureProof.Format;
 
@@ -27,6 +29,34 @@ public sealed class FeatureProofFileStore
             Directory.CreateDirectory(directory);
         }
 
-        await File.WriteAllTextAsync(path, FeatureProofJson.Serialize(document), cancellationToken);
+        var content = File.Exists(path)
+            ? await MergeRunsIntoExistingFileAsync(path, document, cancellationToken)
+            : FeatureProofJson.Serialize(document);
+
+        await File.WriteAllTextAsync(path, content.TrimEnd() + "\n", cancellationToken);
+    }
+
+    private static async Task<string> MergeRunsIntoExistingFileAsync(
+        string path,
+        FeatureProofDocument document,
+        CancellationToken cancellationToken)
+    {
+        var existingContent = await File.ReadAllTextAsync(path, cancellationToken);
+        var root = JsonNode.Parse(
+            existingContent,
+            new JsonNodeOptions { PropertyNameCaseInsensitive = true },
+            new JsonDocumentOptions
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip
+            }) as JsonObject;
+
+        if (root is null)
+        {
+            return FeatureProofJson.Serialize(document);
+        }
+
+        root["runs"] = JsonSerializer.SerializeToNode(document.Runs, FeatureProofJson.Options);
+        return root.ToJsonString(FeatureProofJson.Options);
     }
 }
