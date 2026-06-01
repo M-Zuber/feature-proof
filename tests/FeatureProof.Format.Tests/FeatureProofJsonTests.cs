@@ -15,7 +15,7 @@ public sealed class FeatureProofJsonTests
             "..",
             "..",
             "samples",
-            "crm-parity.fproof"));
+            "featureproof-dogfood.fproof"));
 
         var document = FeatureProofJson.Deserialize(File.ReadAllText(samplePath));
 
@@ -35,7 +35,7 @@ public sealed class FeatureProofJsonTests
             "..",
             "..",
             "samples",
-            "crm-parity.fproof"));
+            "featureproof-dogfood.fproof"));
 
         var document = FeatureProofJson.Deserialize(File.ReadAllText(samplePath));
         var serialized = FeatureProofJson.Serialize(document);

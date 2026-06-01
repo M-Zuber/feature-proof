@@ -1,0 +1,449 @@
+{
+  "$schema": "../schema/feature-proof.schema.json",
+  "schema": "feature-proof/v1",
+  "project": {
+    "name": "FeatureProof Dogfood Checklist",
+    "targetSystem": "FeatureProof",
+    "sourceSystems": [
+      "FeatureProof Requirements",
+      "FeatureProof README",
+      "FeatureProof Format v1",
+      "FeatureProof Packaging Workflow"
+    ],
+    "description": "Self-referential parity checklist for validating FeatureProof while using FeatureProof."
+  },
+  "areas": [
+    {
+      "id": "file-format",
+      "name": "File Format",
+      "description": "The app can load, validate, and preserve FeatureProof v1 files."
+    },
+    {
+      "id": "workspace-ui",
+      "name": "Workspace UI",
+      "description": "The local browser UI supports the tester workflow."
+    },
+    {
+      "id": "run-recording",
+      "name": "Run Recording",
+      "description": "Users can create runs and record check outcomes without corrupting prior results."
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "description": "The app can summarize current parity state for review."
+    },
+    {
+      "id": "distribution",
+      "name": "Distribution",
+      "description": "The app can be packaged and shared with users who do not have .NET installed."
+    },
+    {
+      "id": "agent-readiness",
+      "name": "Agent Readiness",
+      "description": "Repository docs and examples support agent-assisted .fproof generation."
+    }
+  ],
+  "checks": [
+    {
+      "id": "load-sample-on-source-run",
+      "area": "workspace-ui",
+      "title": "Repository launch auto-loads the dogfood checklist",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "must",
+      "description": "When the app is launched from the repository, the sample dogfood file opens automatically so contributors can immediately test the app.",
+      "steps": [
+        "Run dotnet run --project src/FeatureProof.App from the repository root.",
+        "Open the local URL printed by the app.",
+        "Inspect the project header and dashboard."
+      ],
+      "expected": [
+        "The project name is FeatureProof Dogfood Checklist.",
+        "The target system is FeatureProof.",
+        "The dashboard shows non-zero check counts without manually opening a file."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "selectors": [
+          "h1",
+          ".project-strip",
+          ".metrics"
+        ],
+        "dataRequirements": [
+          "Run from a source checkout that contains samples/featureproof-dogfood.fproof."
+        ],
+        "risks": [
+          "Packaged builds intentionally do not include this sample."
+        ]
+      }
+    },
+    {
+      "id": "open-valid-fproof-file",
+      "area": "file-format",
+      "title": "Open a valid .fproof file by path",
+      "sourceSystem": "FeatureProof Format v1",
+      "priority": "must",
+      "description": "A user can type a local .fproof path, open it, and see the loaded project state.",
+      "steps": [
+        "Copy a valid .fproof file to a temporary local path.",
+        "Enter that path in the file path field.",
+        "Click Open."
+      ],
+      "expected": [
+        "The app loads the file without errors.",
+        "The notice area confirms the file was loaded.",
+        "Areas, checks, run history, and latest statuses reflect the opened file."
+      ],
+      "agentHints": {
+        "testType": "ui-plus-file",
+        "dataRequirements": [
+          "A valid feature-proof/v1 .fproof file on disk."
+        ],
+        "risks": [
+          "Current UI expects a local filesystem path rather than a browser file picker."
+        ]
+      }
+    },
+    {
+      "id": "start-new-run",
+      "area": "run-recording",
+      "title": "Start a new test run",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "must",
+      "description": "A user can begin a new run with tester, target version, browser, and URL context.",
+      "steps": [
+        "Load a .fproof file.",
+        "Enter a tester name.",
+        "Enter a target version.",
+        "Enter browser and URL context.",
+        "Click Start new run."
+      ],
+      "expected": [
+        "A new run appears in Run History.",
+        "Run Control displays the new run id.",
+        "Record buttons become enabled for the active run."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "dataRequirements": [
+          "A loaded .fproof file with at least one check."
+        ],
+        "risks": [
+          "Run ids are timestamp-based, so exact ids should not be asserted."
+        ]
+      }
+    },
+    {
+      "id": "record-result-with-blank-notes",
+      "area": "run-recording",
+      "title": "Record a result without carrying forward old notes",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "must",
+      "description": "New run results should start with blank notes and should not inherit stale notes from prior runs.",
+      "steps": [
+        "Load a .fproof file with an older result that contains notes.",
+        "Start a new run.",
+        "Record a result for the same check with the notes field empty.",
+        "Save the file.",
+        "Inspect the saved JSON."
+      ],
+      "expected": [
+        "The new result is saved with the selected status.",
+        "The previous result note is not copied into the new result.",
+        "Blank notes are omitted or represented as null rather than an empty string."
+      ],
+      "agentHints": {
+        "testType": "ui-plus-file",
+        "dataRequirements": [
+          "A .fproof file containing at least one previous result with notes."
+        ],
+        "risks": [
+          "Manual inspection may be needed until a dedicated JSON diff view exists."
+        ]
+      }
+    },
+    {
+      "id": "completed-run-is-readonly",
+      "area": "run-recording",
+      "title": "Completed runs cannot receive new results",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "must",
+      "description": "Once the latest run is completed, users should not be able to keep recording into it.",
+      "steps": [
+        "Start a new run.",
+        "Record at least one result.",
+        "Click Complete run.",
+        "Inspect the check table controls."
+      ],
+      "expected": [
+        "The completed run shows as completed in Run History.",
+        "Record buttons are disabled until another run is started.",
+        "Clicking Save does not add additional results to the completed run."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "dataRequirements": [
+          "A loaded .fproof file with at least one active run."
+        ]
+      }
+    },
+    {
+      "id": "save-preserves-non-run-json",
+      "area": "file-format",
+      "title": "Saving preserves non-run JSON structure",
+      "sourceSystem": "FeatureProof Format v1",
+      "priority": "must",
+      "description": "Saving run results should not rewrite unrelated project, area, check, or schema metadata.",
+      "steps": [
+        "Load a .fproof file that includes $schema and check agentHints.",
+        "Start a run and record one result.",
+        "Save the file.",
+        "Compare the saved file with the original."
+      ],
+      "expected": [
+        "$schema remains present.",
+        "Project, areas, and checks are semantically unchanged.",
+        "Omitted optional arrays are not added to existing checks.",
+        "Selector strings remain readable and are not rewritten to unicode escape sequences.",
+        "The meaningful diff is limited to the runs collection."
+      ],
+      "agentHints": {
+        "testType": "file-diff",
+        "dataRequirements": [
+          "A copy of a .fproof file before saving.",
+          "A diff tool such as git diff."
+        ],
+        "risks": [
+          "Formatting can still be normalized inside the runs collection."
+        ]
+      }
+    },
+    {
+      "id": "dashboard-status-counts-update",
+      "area": "workspace-ui",
+      "title": "Dashboard counts update from latest results",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "should",
+      "description": "The dashboard should summarize latest check state after results are recorded.",
+      "steps": [
+        "Start a new run.",
+        "Record a Pass result for one check.",
+        "Record a Blocked or Partial result for another check.",
+        "Inspect the metrics row."
+      ],
+      "expected": [
+        "The Runs count increases.",
+        "The Pass count reflects the latest pass result.",
+        "The Failing count includes fail, partial, and blocked latest statuses.",
+        "Untested decreases for checks with recorded latest results."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "selectors": [
+          ".metrics"
+        ],
+        "dataRequirements": [
+          "A loaded .fproof file with multiple checks."
+        ]
+      }
+    },
+    {
+      "id": "filter-check-table",
+      "area": "workspace-ui",
+      "title": "Filter checks by text and status",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "should",
+      "description": "A tester can narrow the check list by search text and latest status.",
+      "steps": [
+        "Load a .fproof file with checks across multiple areas.",
+        "Type a word from one check title into the filter box.",
+        "Select a status from the status filter."
+      ],
+      "expected": [
+        "The check table only shows matching rows.",
+        "The visible count updates to match the filtered result set.",
+        "Clearing filters restores the full check list."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "selectors": [
+          ".filters",
+          ".checks-table"
+        ],
+        "dataRequirements": [
+          "A loaded .fproof file with at least two checks and varied statuses."
+        ]
+      }
+    },
+    {
+      "id": "preview-markdown-report",
+      "area": "reports",
+      "title": "Preview Markdown report",
+      "sourceSystem": "FeatureProof Requirements",
+      "priority": "should",
+      "description": "A user can generate a Markdown summary of the current parity state.",
+      "steps": [
+        "Load a .fproof file.",
+        "Record or inspect existing run results.",
+        "Click Preview in the Report panel."
+      ],
+      "expected": [
+        "The report preview includes the project name.",
+        "The report includes summary counts.",
+        "The report includes latest check results and run history."
+      ],
+      "agentHints": {
+        "testType": "ui",
+        "selectors": [
+          ".report-preview"
+        ],
+        "dataRequirements": [
+          "A loaded .fproof file."
+        ]
+      }
+    },
+    {
+      "id": "package-excludes-samples",
+      "area": "distribution",
+      "title": "Package artifact excludes sample .fproof files",
+      "sourceSystem": "FeatureProof Packaging Workflow",
+      "priority": "must",
+      "description": "Manual distribution packages should not include the repository sample file.",
+      "steps": [
+        "Run pwsh ./eng/package.ps1 -Version 0.1.0.",
+        "Open artifacts/FeatureProof-0.1.0.zip.",
+        "Search the archive contents for .fproof files."
+      ],
+      "expected": [
+        "The package script completes successfully.",
+        "The archive contains platform-specific app folders.",
+        "No .fproof files are present in the archive."
+      ],
+      "agentHints": {
+        "testType": "command-plus-file",
+        "dataRequirements": [
+          ".NET SDK installed on the build machine.",
+          "PowerShell available as pwsh."
+        ],
+        "risks": [
+          "First publish may download runtime packs."
+        ]
+      }
+    },
+    {
+      "id": "packaged-app-starts-blank",
+      "area": "distribution",
+      "title": "Packaged app starts without a sample file",
+      "sourceSystem": "FeatureProof Packaging Workflow",
+      "priority": "must",
+      "description": "When running from a package, FeatureProof should not depend on repository sample files.",
+      "steps": [
+        "Create or extract a packaged build.",
+        "Run the platform launcher.",
+        "Open http://localhost:5077."
+      ],
+      "expected": [
+        "The app starts without requiring .NET on the target machine.",
+        "The UI asks the user to open a local .fproof file.",
+        "The repository dogfood sample is not auto-loaded from the package."
+      ],
+      "agentHints": {
+        "testType": "manual-cross-platform",
+        "dataRequirements": [
+          "A packaged build for the current operating system."
+        ],
+        "risks": [
+          "macOS and Linux may require chmod +x on the launcher and executable."
+        ]
+      }
+    },
+    {
+      "id": "agent-generation-docs-are-usable",
+      "area": "agent-readiness",
+      "title": "Agent generation guidance is sufficient",
+      "sourceSystem": "FeatureProof README",
+      "priority": "should",
+      "description": "The README should tell users what context to provide to an agent and how to prompt for new .fproof files.",
+      "steps": [
+        "Open README.md.",
+        "Find the Generating .fproof Files With An Agent section.",
+        "Review the listed context files, prompt templates, and review checklist."
+      ],
+      "expected": [
+        "The README lists the format docs, schemas, source definition sample, and sample .fproof as recommended context.",
+        "The README includes a prompt for generating .fproof files.",
+        "The README includes a prompt for creating .fproofdef.json drafts.",
+        "The README includes review guidance for human validation."
+      ],
+      "agentHints": {
+        "testType": "docs",
+        "dataRequirements": [
+          "Repository README.md."
+        ]
+      }
+    },
+    {
+      "id": "invalid-file-shows-validation-issues",
+      "area": "file-format",
+      "title": "Invalid files surface validation issues",
+      "sourceSystem": "FeatureProof Format v1",
+      "priority": "could",
+      "description": "The app should reject invalid files with useful validation feedback instead of silently loading bad data.",
+      "steps": [
+        "Create a copy of a .fproof file.",
+        "Remove a required field such as project.name or a check title.",
+        "Open the invalid file in FeatureProof."
+      ],
+      "expected": [
+        "The file does not load as a valid workspace.",
+        "The user sees validation feedback identifying the missing or invalid field.",
+        "The invalid file is not saved over a valid workspace."
+      ],
+      "agentHints": {
+        "testType": "negative-file",
+        "dataRequirements": [
+          "A deliberately invalid .fproof file."
+        ],
+        "risks": [
+          "Current error display may need refinement if exceptions are not shown in the main notice area."
+        ]
+      }
+    }
+  ],
+  "runs": [
+    {
+      "id": "run-20260602-dogfood-seed",
+      "startedAt": "2026-06-02T09:00:00+03:00",
+      "completedAt": "2026-06-02T09:45:00+03:00",
+      "tester": "featureproof.team",
+      "targetVersion": "source-checkout",
+      "environment": {
+        "browser": "Edge",
+        "url": "http://localhost:5179"
+      },
+      "results": [
+        {
+          "checkId": "load-sample-on-source-run",
+          "status": "pass",
+          "notes": "Seed result confirms the repository launch scenario is represented in the checklist.",
+          "evidence": [],
+          "recordedAt": "2026-06-02T09:05:00+03:00"
+        },
+        {
+          "checkId": "save-preserves-non-run-json",
+          "status": "pass",
+          "notes": "Covered by regression tests for preserving non-run JSON while replacing runs.",
+          "evidence": [],
+          "recordedAt": "2026-06-02T09:20:00+03:00"
+        },
+        {
+          "checkId": "package-excludes-samples",
+          "status": "pass",
+          "notes": "The packaging script checks for .fproof files before creating the distribution archive.",
+          "evidence": [],
+          "recordedAt": "2026-06-02T09:35:00+03:00"
+        }
+      ]
+    }
+  ]
+}

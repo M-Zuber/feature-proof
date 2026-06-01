@@ -218,7 +218,7 @@ else
 @code {
     private string filePath = "";
     private string tester = System.Environment.UserName;
-    private string targetVersion = "crm-preview";
+    private string targetVersion = "local-build";
     private string browser = "Edge";
     private string url = "";
     private string search = "";
@@ -231,7 +231,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var samplePath = Path.GetFullPath(Path.Combine(Environment.ContentRootPath, "..", "..", "samples", "crm-parity.fproof"));
+        var samplePath = Path.GetFullPath(Path.Combine(Environment.ContentRootPath, "..", "..", "samples", "featureproof-dogfood.fproof"));
 
         if (File.Exists(samplePath))
         {

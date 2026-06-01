@@ -2,41 +2,115 @@
   "$schema": "../schema/feature-proof-definition.schema.json",
   "schema": "feature-proof-definition/v1",
   "project": {
-    "name": "All-in-One CRM Feature Parity",
-    "targetSystem": "New All-in-One CRM"
+    "name": "FeatureProof Dogfood Checklist",
+    "targetSystem": "FeatureProof"
   },
   "sourceSystems": [
     {
-      "name": "Legacy CRM",
-      "purpose": "Primary constituent and donor management system.",
+      "name": "FeatureProof Requirements",
+      "purpose": "Product expectations for a local-first feature testing and parity review tool.",
       "modules": [
         {
-          "name": "Donor Profiles",
+          "name": "Workspace",
           "capabilities": [
             {
-              "name": "Search donors by name",
-              "businessOutcome": "Staff can reliably find the correct donor record.",
+              "name": "Open a local feature proof file",
+              "businessOutcome": "A tester can load a .fproof file from disk and review the project checklist.",
               "priority": "must",
               "acceptanceSignals": [
-                "Search accepts first name, last name, and organization name.",
-                "Results show enough identifying information to disambiguate donors.",
-                "Opening a result lands on the correct profile."
+                "The user can enter a local file path.",
+                "The app loads valid feature-proof/v1 files.",
+                "The dashboard, checks, and run history reflect the opened file."
               ],
               "dataRequirements": [
-                "Existing donor records with individual and organization names."
+                "A valid .fproof file on the local filesystem."
               ]
             },
             {
-              "name": "Update donor contact details",
-              "businessOutcome": "Staff can maintain current contact information with auditability.",
+              "name": "Record a test run",
+              "businessOutcome": "A tester can capture current validation results without overwriting previous run history.",
               "priority": "must",
               "acceptanceSignals": [
-                "Email and phone fields can be edited.",
-                "Saved values persist after refresh.",
-                "Changes are visible in audit or activity history."
+                "The user can start a new run with tester, version, browser, and URL context.",
+                "The user can record statuses and notes for individual checks.",
+                "Completed runs do not receive additional results."
               ],
               "dataRequirements": [
-                "A donor record safe to edit in a test environment."
+                "A loaded .fproof file with at least one check."
+              ]
+            },
+            {
+              "name": "Preserve collaboration-friendly diffs",
+              "businessOutcome": "Saving run results creates focused file diffs that are easy to review in git or shared-drive workflows.",
+              "priority": "must",
+              "acceptanceSignals": [
+                "Saving preserves existing schema metadata and check definitions.",
+                "Saving does not add omitted optional fields to existing checks.",
+                "The meaningful saved change is limited to run data."
+              ],
+              "dataRequirements": [
+                "A .fproof file with existing check metadata and at least one new result to save."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeatureProof Packaging Workflow",
+      "purpose": "Manual distribution process for sharing the app with users who do not have .NET installed.",
+      "modules": [
+        {
+          "name": "Distribution",
+          "capabilities": [
+            {
+              "name": "Create a self-contained distribution artifact",
+              "businessOutcome": "A lead can create one shareable package that includes platform-specific app builds.",
+              "priority": "must",
+              "acceptanceSignals": [
+                "The package script creates artifacts/FeatureProof-<version>.zip.",
+                "The archive contains Windows, Linux, and macOS app folders.",
+                "The archive does not include sample .fproof files."
+              ],
+              "dataRequirements": [
+                ".NET SDK and PowerShell are available on the packaging machine."
+              ]
+            },
+            {
+              "name": "Run the packaged app without repository samples",
+              "businessOutcome": "A team member can launch FeatureProof from the package and choose their own feature proof file.",
+              "priority": "must",
+              "acceptanceSignals": [
+                "The packaged app starts without requiring a .NET install.",
+                "The UI prompts the user for a local .fproof path.",
+                "The repository dogfood sample is not auto-loaded from the package."
+              ],
+              "dataRequirements": [
+                "A packaged build for the tester's operating system."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeatureProof README",
+      "purpose": "Repository documentation for users and agents.",
+      "modules": [
+        {
+          "name": "Agent Guidance",
+          "capabilities": [
+            {
+              "name": "Explain agent context requirements",
+              "businessOutcome": "A user can provide enough repository context for an agent to generate useful .fproof drafts.",
+              "priority": "should",
+              "acceptanceSignals": [
+                "The README lists the format docs, schemas, source definition sample, and dogfood sample as useful context.",
+                "The README provides prompt templates for .fproofdef.json and .fproof generation.",
+                "The README includes review guidance before using generated checks."
+              ],
+              "dataRequirements": [
+                "Repository README.md and sample files."
               ]
             }
           ]
