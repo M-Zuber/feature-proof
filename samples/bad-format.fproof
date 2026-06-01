@@ -3,7 +3,7 @@
   "schema": "feature-proof/v1",
   "project": {
     "name": "FeatureProof Dogfood Checklist",
-    "targetSystem": "FeatureProof",
+    "targetSystem": "Good format",
     "sourceSystems": [
       "FeatureProof Requirements",
       "FeatureProof README",
@@ -537,100 +537,6 @@
           "notes": "Seed result confirms the repository launch scenario is represented in the checklist.",
           "evidence": [],
           "recordedAt": "2026-06-02T02:15:48.0146164+03:00"
-        }
-      ]
-    },
-    {
-      "id": "run-20260602-023129",
-      "startedAt": "2026-06-02T02:31:29.9235782+03:00",
-      "completedAt": "2026-06-02T02:38:01.0372449+03:00",
-      "tester": "zuberm",
-      "targetVersion": "local-build-v2",
-      "environment": {
-        "browser": "Chrome",
-        "url": ""
-      },
-      "results": [
-        {
-          "checkId": "agent-generation-docs-are-usable",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:31:34.0279479+03:00"
-        },
-        {
-          "checkId": "package-excludes-samples",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:31:42.1365538+03:00"
-        },
-        {
-          "checkId": "packaged-app-starts-blank",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:31:45.3769814+03:00"
-        },
-        {
-          "checkId": "invalid-file-shows-validation-issues",
-          "status": "fail",
-          "notes": "There is only a toast at the bottom of the page with the message: `An unhandled error occurred. Reload`",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:32:17.4527147+03:00"
-        },
-        {
-          "checkId": "open-valid-fproof-file",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:33:18.4983078+03:00"
-        },
-        {
-          "checkId": "save-preserves-non-run-json",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:33:41.9257456+03:00"
-        },
-        {
-          "checkId": "preview-markdown-report",
-          "status": "partial",
-          "notes": "The preview is still small, consider making it instead a sub route that display it full page - ideally formatted if possible instead of showing raw markdown",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:35:29.797576+03:00"
-        },
-        {
-          "checkId": "completed-run-is-readonly",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:35:32.4612532+03:00"
-        },
-        {
-          "checkId": "record-result-with-blank-notes",
-          "status": "partial",
-          "notes": "- if a run is in progress, and the page is reloaded/file reloaded, the seed data returns to the UI\n- The UI does not change the data in the `latest` column if the data comes from the seed run, but it will updated if the data comes from a later run",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:37:08.4204574+03:00"
-        },
-        {
-          "checkId": "start-new-run",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:37:15.2080347+03:00"
-        },
-        {
-          "checkId": "dashboard-status-counts-update",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:37:36.4250612+03:00"
-        },
-        {
-          "checkId": "filter-check-table",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:37:48.7339061+03:00"
-        },
-        {
-          "checkId": "load-sample-on-source-run",
-          "status": "pass",
-          "evidence": [],
-          "recordedAt": "2026-06-02T02:37:54.9764293+03:00"
         }
       ]
     }
