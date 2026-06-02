@@ -1,8 +1,11 @@
 - still an issue that if data in `latest` column pulls from seed run it does not updated on user interaction (this may be due to the id not containing a proper time stamp)
 - there should be a way to open data on a specific run to view notes and status of each check
+  - this should be implemented on the /report page, and done via a select list of all runs (the table with run history can stay, possibly location should be moved)
 - the markdown report should include all data from each run in collapsable sections under the latest check results
 - need a filter for the Area column
 - there should be a navigation option in the sidebar to go to the preview
 - consider if going to the preview page should automatically save the current state. if not, it should inform the user that changes may be lost, and offer a choice to save. Another option would be to find a way to keep the data in local storage or similar so that it stays in place when switching from workspace to preview and back
 - the textarea can be removed, and instead there should be the navigation that exists on the report page to switch between workspace and report (the current button that says Copy Markdown should be repurposed for this). On either page there should be a button at the top of the page to `copy report as markdown`
 - on the workspace page, the checks section should have an internal scrollbar so the dashboard stays visible. I am open to other ideas on how to accomplish the same result
+- run history table should be the same on both pages - using the version that is on the /report page
+- work should be done to make the site more responsive
