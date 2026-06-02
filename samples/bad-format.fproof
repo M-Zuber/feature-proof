@@ -2,8 +2,7 @@
   "$schema": "../schema/feature-proof.schema.json",
   "schema": "feature-proof/v1",
   "project": {
-    "name": "FeatureProof Dogfood Checklist",
-    "targetSystem": "Good format",
+    
     "sourceSystems": [
       "FeatureProof Requirements",
       "FeatureProof README",
@@ -47,7 +46,6 @@
   "checks": [
     {
       "id": "load-sample-on-source-run",
-      "area": "workspace-ui",
       "title": "Repository launch auto-loads the dogfood checklist",
       "sourceSystem": "FeatureProof Requirements",
       "priority": "must",
