@@ -1,0 +1,147 @@
+@page "/report"
+@rendermode InteractiveServer
+@inject FeatureProofWorkspace Workspace
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>FeatureProof Report</PageTitle>
+
+<section class="workspace-header report-header">
+    <div>
+        <p class="eyebrow">Report</p>
+        <h1>@(Workspace.Document?.Project.Name ?? "FeatureProof")</h1>
+    </div>
+    <div class="button-row report-actions">
+        <button class="btn btn-outline-secondary" @onclick="BackToWorkspace">Workspace</button>
+        <button class="btn btn-primary" @onclick="CopyMarkdown" disabled="@(Workspace.Document is null)">Copy Markdown</button>
+    </div>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Workspace.Message))
+{
+    <div class="notice">@Workspace.Message</div>
+}
+
+@if (Workspace.Document is null || Workspace.Summary is null)
+{
+    <section class="empty-state">
+        <h2>No report available.</h2>
+        <p>Open a .fproof file from the workspace to render a report.</p>
+    </section>
+}
+else
+{
+    var document = Workspace.Document;
+    var summary = Workspace.Summary;
+
+    <section class="project-strip">
+        <div>
+            <span>Target</span>
+            <strong>@document.Project.TargetSystem</strong>
+        </div>
+        <div>
+            <span>Source systems</span>
+            <strong>@string.Join(", ", document.Project.SourceSystems)</strong>
+        </div>
+        <div>
+            <span>Runs</span>
+            <strong>@summary.CompletedRuns completed of @summary.TotalRuns</strong>
+        </div>
+    </section>
+
+    <section class="metrics">
+        <div class="metric">
+            <span>Checks</span>
+            <strong>@summary.TotalChecks</strong>
+        </div>
+        @foreach (var count in summary.StatusCounts.Where(count => count.Count > 0))
+        {
+            <div class="metric">
+                <span>@FormatStatus(count.Status)</span>
+                <strong>@count.Count</strong>
+            </div>
+        }
+    </section>
+
+    <section class="tool-panel report-section">
+        <div class="panel-header">
+            <h2>Latest Check Results</h2>
+        </div>
+        <div class="table-wrap">
+            <table class="checks-table report-table">
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Check</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Run</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var snapshot in summary.Checks)
+                    {
+                        <tr>
+                            <td>@(snapshot.Area?.Name ?? snapshot.Check.Area)</td>
+                            <td>
+                                <strong>@snapshot.Check.Title</strong>
+                                <p>@snapshot.Check.Description</p>
+                            </td>
+                            <td><span class="pill">@snapshot.Check.Priority</span></td>
+                            <td><span class="status @StatusClass(snapshot.LatestStatus)">@FormatStatus(snapshot.LatestStatus)</span></td>
+                            <td><small>@snapshot.LatestRun?.Id</small></td>
+                            <td>@snapshot.LatestResult?.Notes</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="tool-panel report-section">
+        <div class="panel-header">
+            <h2>Run History</h2>
+        </div>
+        @foreach (var run in document.Runs.OrderByDescending(run => run.StartedAt))
+        {
+            <div class="run-row report-run-row">
+                <strong>@run.Id</strong>
+                <span>@run.StartedAt.LocalDateTime</span>
+                <span>@(run.CompletedAt?.LocalDateTime.ToString() ?? "Open")</span>
+                <span>@run.Tester</span>
+                <span>@run.TargetVersion</span>
+                <span>@run.Results.Count results</span>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private void BackToWorkspace()
+    {
+        Navigation.NavigateTo("");
+    }
+
+    private async Task CopyMarkdown()
+    {
+        if (Workspace.Document is null)
+        {
+            return;
+        }
+
+        await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", MarkdownReportWriter.Write(Workspace.Document));
+        Workspace.SetMessage("Copied report Markdown to clipboard.");
+    }
+
+    private static string FormatStatus(CheckStatus status) =>
+        status switch
+        {
+            CheckStatus.NotApplicable => "Not applicable",
+            CheckStatus.NeedsReview => "Needs review",
+            _ => status.ToString()
+        };
+
+    private static string StatusClass(CheckStatus status) =>
+        status.ToString().ToLowerInvariant();
+}

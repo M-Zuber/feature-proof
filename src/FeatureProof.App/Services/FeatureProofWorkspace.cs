@@ -1,5 +1,6 @@
 using FeatureProof.Core;
 using FeatureProof.Format;
+using System.Text.Json;
 
 namespace FeatureProof.App.Services;
 
@@ -32,6 +33,41 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
         Message = $"Loaded {Path.GetFileName(path)}";
     }
 
+    public async Task<bool> TryLoadAsync(string path, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await LoadAsync(path, cancellationToken);
+            return true;
+        }
+        catch (FeatureProofFormatException exception)
+        {
+            Issues = exception.Issues.Count > 0
+                ? exception.Issues
+                : [new ValidationIssue("format", exception.Message)];
+            Message = $"Could not open {Path.GetFileName(path)}. Review the validation issues below.";
+            return false;
+        }
+        catch (JsonException exception)
+        {
+            Issues = [new ValidationIssue("json", exception.Message)];
+            Message = $"Could not open {Path.GetFileName(path)}. The file is not valid JSON.";
+            return false;
+        }
+        catch (IOException exception)
+        {
+            Issues = [new ValidationIssue("file", exception.Message)];
+            Message = $"Could not open {Path.GetFileName(path)}.";
+            return false;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            Issues = [new ValidationIssue("file", exception.Message)];
+            Message = $"Could not open {Path.GetFileName(path)}.";
+            return false;
+        }
+    }
+
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         if (Document is null || string.IsNullOrWhiteSpace(CurrentPath))
@@ -50,6 +86,35 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
         await _fileStore.SaveAsync(CurrentPath, Document, cancellationToken);
         HasUnsavedChanges = false;
         Message = $"Saved {Path.GetFileName(CurrentPath)}";
+    }
+
+    public async Task CompleteLatestRunAndSaveAsync(CancellationToken cancellationToken = default)
+    {
+        var run = ActiveRun;
+        if (run is null)
+        {
+            Message = "Start a run before completing it.";
+            return;
+        }
+
+        run.CompletedAt = DateTimeOffset.Now;
+        HasUnsavedChanges = true;
+
+        try
+        {
+            await SaveAsync(cancellationToken);
+            if (HasUnsavedChanges)
+            {
+                Message = $"Completed {run.Id}, but it was not saved. {Message}";
+                return;
+            }
+
+            Message = $"Completed and saved {run.Id}";
+        }
+        catch (Exception exception) when (exception is FeatureProofFormatException or JsonException or IOException or UnauthorizedAccessException)
+        {
+            Message = $"Completed {run.Id}, but could not save: {exception.Message}";
+        }
     }
 
     public void StartRun(string tester, string targetVersion, string browser, string url)
@@ -104,7 +169,7 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
 
     public void CompleteLatestRun()
     {
-        var run = Document?.Runs.LastOrDefault();
+        var run = ActiveRun;
         if (run is null)
         {
             return;
@@ -113,6 +178,18 @@ public sealed class FeatureProofWorkspace(FeatureProofFileStore fileStore)
         run.CompletedAt = DateTimeOffset.Now;
         HasUnsavedChanges = true;
         Message = $"Completed {run.Id}";
+    }
+
+    public CheckResult? FindActiveRunResult(string checkId)
+    {
+        var run = ActiveRun;
+        return run?.Results.FirstOrDefault(item =>
+            string.Equals(item.CheckId, checkId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void SetMessage(string message)
+    {
+        Message = message;
     }
 
     public void RefreshValidation()

@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @inject FeatureProofWorkspace Workspace
 @inject IWebHostEnvironment Environment
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
 
 <PageTitle>FeatureProof</PageTitle>
 
@@ -129,6 +131,7 @@ else
                         <option value="@status">@FormatStatus(status)</option>
                     }
                 </select>
+                <button class="btn btn-outline-secondary" @onclick="ClearFilters" disabled="@(!HasFilters)">Clear</button>
             </div>
         </div>
 
@@ -208,7 +211,11 @@ else
         <div class="tool-panel">
             <div class="panel-header">
                 <h2>Report</h2>
-                <button class="btn btn-outline-secondary btn-sm" @onclick="GenerateReport">Preview</button>
+                <div class="button-row">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="GenerateReport">Preview</button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="OpenReport" disabled="@(Workspace.Document is null)">Open full report</button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CopyReport" disabled="@string.IsNullOrWhiteSpace(report)">Copy</button>
+                </div>
             </div>
             <textarea class="form-control report-preview" readonly value="@report"></textarea>
         </div>
@@ -228,6 +235,7 @@ else
     private readonly Dictionary<string, string> notesDrafts = [];
 
     private bool CanSave => Workspace.Document is not null && !string.IsNullOrWhiteSpace(Workspace.CurrentPath);
+    private bool HasFilters => !string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(statusFilter);
 
     protected override async Task OnInitializedAsync()
     {
@@ -247,8 +255,10 @@ else
 
     private async Task LoadFile()
     {
-        await Workspace.LoadAsync(filePath);
-        SeedDrafts();
+        if (await Workspace.TryLoadAsync(filePath))
+        {
+            SeedDrafts();
+        }
     }
 
     private async Task SaveFile()
@@ -262,19 +272,42 @@ else
         ResetDraftsForNewRun();
     }
 
-    private void CompleteRun() => Workspace.CompleteLatestRun();
+    private async Task CompleteRun() => await Workspace.CompleteLatestRunAndSaveAsync();
 
     private void Record(string checkId)
     {
         statusDrafts.TryGetValue(checkId, out var status);
         notesDrafts.TryGetValue(checkId, out var notes);
         Workspace.RecordResult(checkId, status, notes);
-        SeedDrafts();
+        statusDrafts[checkId] = status;
+        notesDrafts[checkId] = notes ?? "";
     }
 
     private void GenerateReport()
     {
         report = Workspace.Document is null ? "" : MarkdownReportWriter.Write(Workspace.Document);
+    }
+
+    private void OpenReport()
+    {
+        Navigation.NavigateTo("report");
+    }
+
+    private async Task CopyReport()
+    {
+        if (string.IsNullOrWhiteSpace(report))
+        {
+            return;
+        }
+
+        await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", report);
+        Workspace.SetMessage("Copied report to clipboard.");
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        statusFilter = "";
     }
 
     private IEnumerable<CheckSnapshot> Filter(IEnumerable<CheckSnapshot> checks)
@@ -313,10 +346,9 @@ else
 
         foreach (var snapshot in Workspace.Summary.Checks)
         {
-            statusDrafts[snapshot.Check.Id] = snapshot.LatestStatus == CheckStatus.Untested
-                ? CheckStatus.Pass
-                : snapshot.LatestStatus;
-            notesDrafts.TryAdd(snapshot.Check.Id, snapshot.LatestResult?.Notes ?? "");
+            var draft = GetDraft(snapshot);
+            statusDrafts[snapshot.Check.Id] = draft.Status;
+            notesDrafts[snapshot.Check.Id] = draft.Notes;
         }
     }
 
@@ -332,7 +364,7 @@ else
 
         foreach (var snapshot in Workspace.Summary.Checks)
         {
-            statusDrafts[snapshot.Check.Id] = CheckStatus.Pass;
+            statusDrafts[snapshot.Check.Id] = CheckStatus.Untested;
             notesDrafts[snapshot.Check.Id] = "";
         }
     }
@@ -341,12 +373,23 @@ else
     {
         if (!statusDrafts.ContainsKey(snapshot.Check.Id))
         {
-            statusDrafts[snapshot.Check.Id] = snapshot.LatestStatus == CheckStatus.Untested
-                ? CheckStatus.Pass
-                : snapshot.LatestStatus;
+            statusDrafts[snapshot.Check.Id] = GetDraft(snapshot).Status;
         }
 
-        notesDrafts.TryAdd(snapshot.Check.Id, snapshot.LatestResult?.Notes ?? "");
+        notesDrafts.TryAdd(snapshot.Check.Id, GetDraft(snapshot).Notes);
+    }
+
+    private DraftValue GetDraft(CheckSnapshot snapshot)
+    {
+        if (Workspace.ActiveRun is not null)
+        {
+            var activeResult = Workspace.FindActiveRunResult(snapshot.Check.Id);
+            return new DraftValue(
+                activeResult?.Status ?? CheckStatus.Untested,
+                activeResult?.Notes ?? "");
+        }
+
+        return new DraftValue(snapshot.LatestStatus, snapshot.LatestResult?.Notes ?? "");
     }
 
     private static string FormatStatus(CheckStatus status) =>
@@ -359,4 +402,6 @@ else
 
     private static string StatusClass(CheckStatus status) =>
         status.ToString().ToLowerInvariant();
+
+    private sealed record DraftValue(CheckStatus Status, string Notes);
 }

@@ -7,6 +7,39 @@ namespace FeatureProof.Format.Tests;
 public sealed class FeatureProofFileStoreTests
 {
     [Fact]
+    public async Task LoadAsync_NullRequiredSections_ReturnsValidationIssues()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"feature-proof-{Guid.NewGuid():N}.fproof");
+        await File.WriteAllTextAsync(
+            path,
+            """
+            {
+              "schema": "feature-proof/v1",
+              "project": null,
+              "areas": [],
+              "checks": [],
+              "runs": []
+            }
+            """);
+
+        var fileStore = new FeatureProofFileStore();
+
+        try
+        {
+            var exception = await Assert.ThrowsAsync<FeatureProofFormatException>(() => fileStore.LoadAsync(path));
+
+            Assert.Contains(exception.Issues, issue => issue.Code == "project.required");
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    [Fact]
     public async Task SaveAsync_ForExistingFile_ReplacesOnlyRuns()
     {
         var path = Path.Combine(Path.GetTempPath(), $"feature-proof-{Guid.NewGuid():N}.fproof");

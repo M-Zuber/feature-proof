@@ -191,7 +191,13 @@ h2 {
 }
 
 .filters {
-    grid-template-columns: minmax(180px, 260px) 160px;
+    grid-template-columns: minmax(180px, 260px) 160px auto;
+}
+
+.button-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .table-wrap {
@@ -289,7 +295,31 @@ h2 {
 
 .report-preview {
     font-family: Consolas, Monaco, monospace;
-    min-height: 260px;
+    min-height: 440px;
+}
+
+.report-header {
+    align-items: center;
+}
+
+.report-actions {
+    justify-content: end;
+}
+
+.report-section {
+    margin-bottom: 16px;
+}
+
+.report-table {
+    min-width: 1080px;
+}
+
+.report-table td:nth-child(6) {
+    min-width: 220px;
+}
+
+.report-run-row {
+    grid-template-columns: 1.3fr 1.1fr 1.1fr .8fr .9fr .7fr;
 }
 
 #blazor-error-ui {
@@ -309,11 +339,16 @@ h2 {
     .project-strip,
     .metrics,
     .run-grid,
-    .two-column {
+    .two-column,
+    .report-run-row {
         grid-template-columns: 1fr;
     }
 
     .file-bar {
         grid-template-columns: 1fr;
+    }
+
+    .report-actions {
+        justify-content: start;
     }
 }
